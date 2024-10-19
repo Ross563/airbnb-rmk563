@@ -31,7 +31,7 @@ app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use(
   cors({
     credentials: true,
-    origin: "https://airbnb-rmk563-ui.vercel.app",
+    origin: "*",
   })
 );
 
