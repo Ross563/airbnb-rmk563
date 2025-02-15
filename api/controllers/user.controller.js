@@ -1,12 +1,12 @@
-const bcrypt = require("bcryptjs");
-const User = require("../models/User.js");
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
+import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = process.env.JwtSecret;
 
-async function signUp(req, res) {
+export async function signUp(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const { name, email, password } = req.body;
 
@@ -23,7 +23,7 @@ async function signUp(req, res) {
   }
 }
 
-async function login(req, res) {
+export async function login(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const { email, password } = req.body;
   const userDoc = await User.findOne({ email });
@@ -50,17 +50,17 @@ async function login(req, res) {
   }
 }
 
-async function logout(req, res) {
+export async function logout(req, res) {
   res.cookie("token", "").json(true);
 }
 
-async function getAllUsers(req, res) {
+export async function getAllUsers(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const user = await User.find({});
   res.json(user);
 }
 
-async function getProfile(req, res) {
+export async function getProfile(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   if (token) {
@@ -73,5 +73,3 @@ async function getProfile(req, res) {
     res.json(null);
   }
 }
-
-module.exports = { signUp, login, logout, getAllUsers, getProfile };

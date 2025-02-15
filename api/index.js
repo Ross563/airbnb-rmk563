@@ -1,17 +1,18 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const cookieParser = require("cookie-parser");
-const cloudinary = require("cloudinary").v2;
-const multer = require("multer");
-const {
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import cookieParser from "cookie-parser";
+import cloudinary from "cloudinary";
+import multer from "multer";
+import dotenv from "dotenv";
+import {
   signUp,
   login,
   logout,
   getAllUsers,
   getProfile,
-} = require("./controllers/user.controller.js");
-const {
+} from "./controllers/user.controller.js";
+import {
   createPlace,
   getUserPlaces,
   getPlaceById,
@@ -21,12 +22,12 @@ const {
   getBookings,
   uploadByLink,
   upload,
-} = require("./controllers/places.controller.js");
+} from "./controllers/places.controller.js";
 
-require("dotenv").config();
+dotenv.config();
 const app = express();
 
-cloudinary.config({
+cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
@@ -40,7 +41,7 @@ app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use(
   cors({
     credentials: true,
-    origin: "https://airbnb-rmk563-ui.vercel.app",
+    origin: ["http://localhost:5173", "https://airbnb-rmk563-ui.vercel.app"],
   })
 );
 

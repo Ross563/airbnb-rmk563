@@ -1,13 +1,13 @@
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
-const Place = require("../models/Place.js");
-const Booking = require("../models/Booking.js");
-const cloudinary = require("cloudinary").v2;
-const imageDownloader = require("image-downloader");
+import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
+import cloudinary from "cloudinary";
+import imageDownloader from "image-downloader";
+import Place from "../models/Place.js";
+import Booking from "../models/Booking.js";
 
 const jwtSecret = process.env.JwtSecret;
 
-cloudinary.config({
+cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
@@ -15,7 +15,7 @@ cloudinary.config({
 
 async function uploadToCloudinary(path) {
   return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload(
+    cloudinary.v2.uploader.upload(
       path,
       { folder: "airbnb_clone" },
       (err, result) => {
@@ -38,7 +38,7 @@ function getUserDataFromReq(req) {
   });
 }
 
-async function createPlace(req, res) {
+export async function createPlace(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   const {
@@ -72,7 +72,7 @@ async function createPlace(req, res) {
   });
 }
 
-async function getUserPlaces(req, res) {
+export async function getUserPlaces(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
@@ -81,13 +81,13 @@ async function getUserPlaces(req, res) {
   });
 }
 
-async function getPlaceById(req, res) {
+export async function getPlaceById(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const { id } = req.params;
   res.json(await Place.findById(id));
 }
 
-async function updatePlace(req, res) {
+export async function updatePlace(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   const {
@@ -125,12 +125,12 @@ async function updatePlace(req, res) {
   });
 }
 
-async function getAllPlaces(req, res) {
+export async function getAllPlaces(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   res.json(await Place.find());
 }
 
-async function createBooking(req, res) {
+export async function createBooking(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const userData = await getUserDataFromReq(req);
   const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
@@ -153,13 +153,13 @@ async function createBooking(req, res) {
     });
 }
 
-async function getBookings(req, res) {
+export async function getBookings(req, res) {
   mongoose.connect(process.env.MONGO_URL);
   const userData = await getUserDataFromReq(req);
   res.json(await Booking.find({ user: userData.id }).populate("place"));
 }
 
-async function uploadByLink(req, res) {
+export async function uploadByLink(req, res) {
   const { link } = req.body;
   const newName = "photo" + Date.now() + ".jpg";
   await imageDownloader.image({
@@ -170,7 +170,7 @@ async function uploadByLink(req, res) {
   res.json(url);
 }
 
-async function upload(req, res) {
+export async function upload(req, res) {
   const uploadedFiles = [];
   for (let i = 0; i < req.files.length; i++) {
     const { path } = req.files[i];
@@ -179,17 +179,3 @@ async function upload(req, res) {
   }
   res.json(uploadedFiles);
 }
-
-module.exports = {
-  createPlace,
-  getUserPlaces,
-  getPlaceById,
-  updatePlace,
-  getAllPlaces,
-  createBooking,
-  getBookings,
-  uploadToCloudinary,
-  getUserDataFromReq,
-  uploadByLink,
-  upload,
-};
