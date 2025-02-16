@@ -1,13 +1,10 @@
 import bcrypt from "bcryptjs";
-import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import generateTokenAndSetCookie from "../utils/tocken-cookie-setter.js";
 
 const bcryptSalt = bcrypt.genSaltSync(10);
-const jwtSecret = process.env.JwtSecret;
 
 export async function signUp(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
   const { name, email, password } = req.body;
 
   try {
@@ -16,60 +13,64 @@ export async function signUp(req, res) {
       email,
       password: bcrypt.hashSync(password, bcryptSalt),
     });
+    generateTokenAndSetCookie(userDoc._id, userDoc.email, res);
     res.json(userDoc);
   } catch (e) {
-    console.log("user registration error");
+    console.log("user registration error:", e.message);
     res.status(422).json(e);
   }
 }
 
 export async function login(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
   const { email, password } = req.body;
-  const userDoc = await User.findOne({ email });
-  if (userDoc) {
-    const passOk = bcrypt.compareSync(password, userDoc.password);
-    if (passOk) {
-      jwt.sign(
-        {
-          email: userDoc.email,
-          id: userDoc._id,
-        },
-        jwtSecret,
-        {},
-        (err, token) => {
-          if (err) throw err;
-          res.cookie("token", token).json(userDoc);
-        }
-      );
+  try {
+    const userDoc = await User.findOne({ email });
+    if (userDoc) {
+      const passOk = bcrypt.compareSync(password, userDoc.password);
+      if (passOk) {
+        generateTokenAndSetCookie(userDoc._id, userDoc.email, res);
+        res.json(userDoc);
+      } else {
+        res.status(422).json("pass not ok");
+      }
     } else {
-      res.status(422).json("pass not ok");
+      res.json("user not found");
     }
-  } else {
-    res.json("not found");
+  } catch (e) {
+    console.log("login error:", e.message);
+    res.status(500).json(e);
   }
 }
 
 export async function logout(req, res) {
-  res.cookie("token", "").json(true);
+  try {
+    res.cookie("token", "").json(true);
+  } catch (e) {
+    console.log("logout error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
 export async function getAllUsers(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
-  const user = await User.find({});
-  res.json(user);
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (e) {
+    console.log("get all users error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
 export async function getProfile(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
-  const { token } = req.cookies;
-  if (token) {
-    jwt.verify(token, jwtSecret, {}, async (err, userData) => {
-      if (err) throw err;
-      const { name, email, _id } = await User.findById(userData.id);
+  try {
+    if (req.user) {
+      const { name, email, _id } = req.user;
       res.json({ name, email, _id });
-    });
-  } else {
-    res.json(null);
+    } else {
+      res.json(null);
+    }
+  } catch (e) {
+    console.log("get profile error:", e.message);
+    res.status(500).json(e);
   }
 }

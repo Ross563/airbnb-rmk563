@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import cloudinary from "cloudinary";
 import multer from "multer";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import {
   signUp,
   login,
@@ -23,6 +25,7 @@ import {
   uploadByLink,
   upload,
 } from "./controllers/places.controller.js";
+import protectRoute from "./middlewares/protectRoute.js";
 
 dotenv.config();
 const app = express();
@@ -34,6 +37,9 @@ cloudinary.v2.config({
 });
 
 const photosMiddleware = multer({ dest: "/tmp" }); // Configure multer
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -52,19 +58,27 @@ app.get("/test", (req, res) => {
 
 app.post("/register", signUp);
 app.post("/login", login);
-app.post("/logout", logout);
+app.post("/logout", protectRoute, logout);
 app.get("/", getAllUsers);
-app.get("/profile", getProfile);
+app.get("/profile", protectRoute, getProfile);
 
-app.post("/places", createPlace);
-app.get("/user-places", getUserPlaces);
+app.post("/places", protectRoute, createPlace);
+app.get("/user-places", protectRoute, getUserPlaces);
 app.get("/places/:id", getPlaceById);
-app.put("/places", updatePlace);
+app.put("/places", protectRoute, updatePlace);
 app.get("/places", getAllPlaces);
-app.post("/bookings", createBooking);
-app.get("/bookings", getBookings);
-app.post("/upload-by-link", uploadByLink);
+app.post("/bookings", protectRoute, createBooking);
+app.get("/bookings", protectRoute, getBookings);
+app.post("/upload-by-link", protectRoute, uploadByLink);
 
-app.post("/upload", photosMiddleware.array("photos", 100), upload); // Use the new controller function
+app.post(
+  "/upload",
+  protectRoute,
+  photosMiddleware.array("photos", 100),
+  upload
+); // Use the new controller function
 
-app.listen(4000);
+app.listen(3000, () => {
+  mongoose.connect(process.env.MONGO_URL);
+  console.log(`Server Running on port ${3000}`);
+});

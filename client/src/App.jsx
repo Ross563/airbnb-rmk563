@@ -1,11 +1,11 @@
-import './App.css'
-import {Route, Routes} from "react-router-dom";
+import "./App.css";
+import { Route, Routes } from "react-router-dom";
 import IndexPage from "./pages/IndexPage.jsx";
 import LoginPage from "./pages/LoginPage";
-import Layout from "./Layout";
+import Layout from "./components/Layout.jsx";
 import RegisterPage from "./pages/RegisterPage";
 import axios from "axios";
-import {UserContextProvider} from "./UserContext";
+import { UserContextProvider } from "./UserContext";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import PlacesPage from "./pages/PlacesPage";
 import PlacesFormPage from "./pages/PlacesFormPage";
@@ -34,7 +34,7 @@ function App() {
         </Route>
       </Routes>
     </UserContextProvider>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,9 +1,9 @@
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import BookingWidget from "../BookingWidget";
-import PlaceGallery from "../PlaceGallery";
-import AddressLink from "../AddressLink";
+import BookingWidget from "../components/BookingWidget";
+import PlaceGallery from "../components/PlaceGallery";
+import AddressLink from "../components/AddressLink";
 
 export default function PlacePage() {
   const { id } = useParams();
@@ -12,9 +12,14 @@ export default function PlacePage() {
     if (!id) {
       return;
     }
-    axios.get(`/places/${id}`).then((response) => {
-      setPlace(response.data);
-    });
+    try {
+      axios.get(`/places/${id}`).then((response) => {
+        setPlace(response.data);
+      });
+    } catch (e) {
+      alert("error fetching place");
+      console.log("error fetching place (at frontend):", e.message);
+    }
   }, [id]);
 
   if (!place) return "";

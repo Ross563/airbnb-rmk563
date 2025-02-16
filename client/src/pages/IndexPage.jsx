@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import Image from "../Image.jsx";
+import Image from "../components/Image.jsx";
 
 export default function IndexPage() {
   const [places, setPlaces] = useState([
@@ -21,9 +21,14 @@ export default function IndexPage() {
     },
   ]);
   useEffect(() => {
-    axios.get("/places").then((response) => {
-      setPlaces(response.data);
-    });
+    try {
+      axios.get("/places").then((response) => {
+        setPlaces(response.data);
+      });
+    } catch (e) {
+      alert("error fetching places");
+      console.log("error fetching places (in IndexPage.jsx):", e.message);
+    }
   }, []);
   return (
     <div className="mt-8 grid gap-x-6 gap-y-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-3">

@@ -1,5 +1,3 @@
-import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
 import cloudinary from "cloudinary";
 import imageDownloader from "image-downloader";
 import Place from "../models/Place.js";
@@ -29,17 +27,20 @@ async function uploadToCloudinary(path) {
   });
 }
 
-function getUserDataFromReq(req) {
-  return new Promise((resolve, reject) => {
-    jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
-      if (err) throw err;
-      resolve(userData);
-    });
-  });
-}
+// export function getUserDataFromReq(req) {
+//   return new Promise((resolve, reject) => {
+//     const { token } = req.cookies;
+//     if (!token) {
+//       return reject(new Error("Token not provided"));
+//     }
+//     jwt.verify(token, jwtSecret, {}, (err, userData) => {
+//       if (err) return reject(err);
+//       resolve(userData);
+//     });
+//   });
+// }
 
 export async function createPlace(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   const {
     title,
@@ -53,10 +54,10 @@ export async function createPlace(req, res) {
     checkOut,
     maxGuests,
   } = req.body;
-  jwt.verify(token, jwtSecret, {}, async (err, userData) => {
-    if (err) throw err;
+  try {
+    const userData = req.user;
     const placeDoc = await Place.create({
-      owner: userData.id,
+      owner: userData._id,
       price,
       title,
       address,
@@ -69,27 +70,34 @@ export async function createPlace(req, res) {
       maxGuests,
     });
     res.json(placeDoc);
-  });
+  } catch (e) {
+    console.log("create place error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
 export async function getUserPlaces(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
-  const { token } = req.cookies;
-  jwt.verify(token, jwtSecret, {}, async (err, userData) => {
-    const { id } = userData;
-    res.json(await Place.find({ owner: id }));
-  });
+  try {
+    const userData = req.user;
+    const { _id } = userData;
+    res.json(await Place.find({ owner: _id }));
+  } catch (e) {
+    console.log("get user places error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
 export async function getPlaceById(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
   const { id } = req.params;
-  res.json(await Place.findById(id));
+  try {
+    res.json(await Place.findById(id));
+  } catch (e) {
+    console.log("get place by id error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
 export async function updatePlace(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
-  const { token } = req.cookies;
   const {
     id,
     title,
@@ -103,10 +111,10 @@ export async function updatePlace(req, res) {
     maxGuests,
     price,
   } = req.body;
-  jwt.verify(token, jwtSecret, {}, async (err, userData) => {
-    if (err) throw err;
+  try {
+    const userData = req.user;
     const placeDoc = await Place.findById(id);
-    if (userData.id === placeDoc.owner.toString()) {
+    if (userData._id === placeDoc.owner.toString()) {
       placeDoc.set({
         title,
         address,
@@ -122,60 +130,89 @@ export async function updatePlace(req, res) {
       await placeDoc.save();
       res.json("ok");
     }
-  });
+  } catch (e) {
+    console.log("update place error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
 export async function getAllPlaces(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
-  res.json(await Place.find());
+  try {
+    res.json(await Place.find());
+  } catch (e) {
+    console.log("get all places error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
-export async function createBooking(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
-  const userData = await getUserDataFromReq(req);
-  const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
-    req.body;
-  Booking.create({
-    place,
-    checkIn,
-    checkOut,
-    numberOfGuests,
-    name,
-    phone,
-    price,
-    user: userData.id,
-  })
-    .then((doc) => {
-      res.json(doc);
+export function createBooking(req, res) {
+  try {
+    const userData = req.user;
+    const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
+      req.body;
+    if (!userData) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    Booking.create({
+      place,
+      checkIn,
+      checkOut,
+      numberOfGuests,
+      name,
+      phone,
+      price,
+      user: userData._id,
     })
-    .catch((err) => {
-      throw err;
-    });
+      .then((doc) => {
+        res.json(doc);
+      })
+      .catch((err) => {
+        console.error("Error creating booking:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+      });
+  } catch (e) {
+    console.error("create booking error:", e.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 }
 
 export async function getBookings(req, res) {
-  mongoose.connect(process.env.MONGO_URL);
-  const userData = await getUserDataFromReq(req);
-  res.json(await Booking.find({ user: userData.id }).populate("place"));
+  try {
+    const userData = req.user;
+    res.json(await Booking.find({ user: userData._id }).populate("place"));
+  } catch (e) {
+    console.log("get bookings error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
 export async function uploadByLink(req, res) {
   const { link } = req.body;
   const newName = "photo" + Date.now() + ".jpg";
-  await imageDownloader.image({
-    url: link,
-    dest: "/tmp/" + newName,
-  });
-  const url = await uploadToCloudinary("/tmp/" + newName);
-  res.json(url);
+  try {
+    await imageDownloader.image({
+      url: link,
+      dest: "/tmp/" + newName,
+    });
+    const url = await uploadToCloudinary("/tmp/" + newName);
+    res.json(url);
+  } catch (e) {
+    console.log("upload by link error:", e.message);
+    res.status(500).json(e);
+  }
 }
 
 export async function upload(req, res) {
   const uploadedFiles = [];
-  for (let i = 0; i < req.files.length; i++) {
-    const { path } = req.files[i];
-    const url = await uploadToCloudinary(path);
-    uploadedFiles.push(url);
+  try {
+    for (let i = 0; i < req.files.length; i++) {
+      const { path } = req.files[i];
+      const url = await uploadToCloudinary(path);
+      uploadedFiles.push(url);
+    }
+    res.json(uploadedFiles);
+  } catch (e) {
+    console.log("upload error:", e.message);
+    res.status(500).json(e);
   }
-  res.json(uploadedFiles);
 }
